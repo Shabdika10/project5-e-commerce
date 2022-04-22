@@ -3,6 +3,15 @@ const aws = require('../AWS/aws');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
+const isValidObjectId = (ObjectId) => {
+    return mongoose.Types.ObjectId.isValid(ObjectId);
+}
+const isValid = function (value) {
+    if (typeof value === 'undefined' || value === null) return false
+    if (typeof value === 'string' && value.trim().length === 0) return false
+
+    return true;
+}
 const register = async (req, res) => {
     try {
         const data = req.body;
@@ -50,6 +59,7 @@ const register = async (req, res) => {
         if (!(data.password.length > 8 && data.password.length <= 15)) {
             return res.status(400).send({status: false,message: 'Minimum password should be 8 and maximum will be 15'});
         }
+        data.password = bcrypt.hashSync(data.password, 10);
 
         if (file && file.length > 0) {
             if (file[0].mimetype.indexOf('image') == -1) {
@@ -118,6 +128,10 @@ const login = async (req, res) => {
 const getUserProfile = async (req, res) => {
     try {
         const userId = req.params.userId;
+
+        // if(userId.trim() == '') {
+        //     return res.status(400).send({ status: false, message: `userId required` });
+        // }
         const userRes = await userSchema.findById(userId);
        
         return res.status(200).send({status: true, message: 'User profile details', data: userRes});
@@ -178,7 +192,7 @@ const updateUserProfile = async (req, res) => {
         }
 
         
-        let isDuplicateEmail = await userSchema.findOne({ phone: data.phone })
+        let isDuplicateEmail = await userSchema.findOne({ phone: data.email })
         if (isDuplicateEmail) {
             return res.status(400).send({ status: false, msg: "email already exists" })
         }
